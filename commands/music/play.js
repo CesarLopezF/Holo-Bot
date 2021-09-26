@@ -1,4 +1,4 @@
-const { RichEmbed } = require("discord.js");
+const { MessageEmbed } = require("discord.js");
 const ytsr = require('ytsr')
 const YTDL = require('ytdl-core');
 module.exports = {
@@ -7,7 +7,8 @@ module.exports = {
     description: "plays a video",
     usage: "play",
     run: async (client, message, args) => {
-        if (message.member.voiceChannel)
+
+        if (message.member.voice.channel)
         {
             mensaje = message.content.toString().split( "-play ");
             mensaje = mensaje[1];
@@ -23,9 +24,9 @@ module.exports = {
 
             Add(youtube.url, youtube.title, message.author.id, youtube.duration, youtube.bestThumbnail.url, message);
 
-            if(!message.guild.voiceConnection)
+            if(!message.guild.me.voice.connection)
             {
-                message.member.voiceChannel.join()
+                message.member.voice.channel.join()
                 .then(connection=>{
                     Play(connection, message)
                 })
@@ -44,7 +45,7 @@ async function Add(url, title, author, timestamp, thumbnail, message)
 {
     var server = servers[message.guild.id];
 
-    const embed = new RichEmbed()
+    const embed = new MessageEmbed()
         .setColor('#DD7F3F')
         .setTitle(`Added to the queue:`)
         .setDescription(`[${title}](${url}) [<@${author}>]`)
@@ -64,9 +65,9 @@ async function Play(connection, message)
 {
     var server = servers[message.guild.id];
 
-    server.dispatcher = connection.playStream(YTDL(server.queue[0], {highWaterMark: 1<<25}), {type: 'opus'}, {filter: "audioonly"});
+    server.dispatcher = connection.play(YTDL(server.queue[0], {highWaterMark: 1<<25}), {filter: "audioonly"});
     
-    var embed = new RichEmbed()
+    var embed = new MessageEmbed()
             .setColor('#DD7F3F')
             .setTitle("Now playing:")
             .addField("Duration: " + server.queueTime[0], "[" + server.queueTitle[0] + "](" + server.queue[0] + ")")
@@ -75,12 +76,12 @@ async function Play(connection, message)
     var lastmsg = await message.channel.send(embed);
     lastmsg = lastmsg.id;
 
-    server.dispatcher.on("end", function()
+    server.dispatcher.on("finish", function()
     {
-        message.channel.fetchMessage(lastmsg).then(async msg => {
+        message.channel.messages.fetch(lastmsg).then(async msg => {
             msg.delete();
         });
-        message.channel.fetchMessage(server.queueAdded[0]).then(async msg =>{
+        message.channel.messages.fetch(server.queueAdded[0]).then(async msg =>{
             msg.delete();
         })
 
@@ -101,4 +102,6 @@ async function Play(connection, message)
             connection.disconnect();
         }
     });
+
+    server.dispatcher.on('error', console.error);
 }

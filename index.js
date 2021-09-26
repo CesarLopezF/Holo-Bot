@@ -8,7 +8,7 @@ const client = new Client({
 
 global.servers = {};
 
-token = "Njg5MDM1MjI1OTc5ODEzODk0.Xm9LtQ.aJEf9Y6ZD9X-aoDfsF017hbnxqc";
+token = "";
 
 client.commands = new Collection();
 client.aliases = new Collection();

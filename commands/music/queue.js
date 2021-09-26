@@ -1,4 +1,4 @@
-const { RichEmbed } = require("discord.js");
+const { MessageEmbed } = require("discord.js");
 module.exports = {
     name: "queue",
     aliases: ["q"],
@@ -8,13 +8,13 @@ module.exports = {
     run: async (client, message, args) => {
         var server = servers[message.guild.id];
 
-        var embed = new RichEmbed()
+        var embed = new MessageEmbed()
             .setColor('#DD7F3F')
             .setAuthor(message.author.username + ",", message.author.displayAvatarURL)
             
         if (server.queueTitle.length > 0)
         {
-            embed = new RichEmbed(embed)
+            embed = new MessageEmbed(embed)
                 .setTitle("All music in queue:")
                 .setThumbnail("https://cdn.discordapp.com/emojis/712807334253953094.gif")
                 .addField("Now playing ---- Duration: " + server.queueTime[0], "[" + server.queueTitle[0] + "](" + server.queue[0] + ") ---- [<@" + 
@@ -22,14 +22,14 @@ module.exports = {
 
             for (var i = 1; i < server.queueTitle.length; i++)
             {
-                embed = new RichEmbed(embed)
+                embed = new MessageEmbed(embed)
                     .addField("Song " + i + ") ---- Duration: " + server.queueTime[i], "[" + server.queueTitle[i] + "](" + server.queue[i] + ") ---- [<@" + 
                     server.queueRequestor[i] + ">]");
             }
         } 
         else 
         {
-            embed = new RichEmbed(embed)
+            embed = new MessageEmbed(embed)
                 .setDescription("There is no music in queue...")
                 .setThumbnail("https://cdn.discordapp.com/emojis/712832917835087882.gif")
         }

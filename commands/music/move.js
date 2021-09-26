@@ -4,16 +4,16 @@ module.exports = {
     description: "moves the bot to another voice channel",
     usage: "move",
     run: async (client, message, args) => {
-        if(!message.member.voiceChannel){
+        if(!message.member.voice.channel){
             message.channel.send("You must be in a voice channel!");
         }
-        else if(!message.guild.voiceConnection)
+        else if(!message.guild.me.voice.connection)
         {
             message.channel.send("What are you trying to do? I am not even in a voice channel... <:holoLaugh:712812696772411403>");
         }
-        else if(message.member.voiceChannel != message.guild.voiceConnection.channel)
+        else if(message.member.voice.channel != message.guild.voice.connection.channel)
         {
-            message.member.voiceChannel.join();
+            message.member.voice.channel.join();
             message.channel.send("I have joined your voice channel!");
             message.channel.send("<a:holoHappy:712807334253953094>");
         }
