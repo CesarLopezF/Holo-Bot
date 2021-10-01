@@ -57,38 +57,8 @@ module.exports = {
                                 play.Add(videos[4].url,videos[4].title,message.author.id,videos[4].duration,videos[4].bestThumbnail.url,videos[4].author.name,videos[4].author.url, message)
                                 break;
                         }
-
-                        /*var server = servers[message.guild.id];
-
-                        const embed = new MessageEmbed()
-                            .setColor('#DD7F3F')
-                            .setTitle(`Added to the queue:`)
-                            .setDescription(`[${title}](${url}) [<@${author}>]`)
-                            .setFooter(`Duration: ${timestamp}`)
-
-                        const added = await message.channel.send(embed);
-                        
-                        server.queue.push(url);
-                        server.queueTitle.push(title);
-                        server.queueThumbnail.push(thumbnail);
-                        server.queueTime.push(timestamp);
-                        server.queueRequestor.push(author);
-                        server.queueAdded.push(added.id);
-                        server.queueAuthorName.push(ytAuthor);
-                        server.queueAuthorUrl.push(ytAuthorURL);
-
-                        if(!message.guild.me.voice.connection){
-                            message.member.voice.channel.join()
-                            .then(connection=>{
-                                play(connection, message)
-                            })
-                        }*/
                     })
-
-                /*const collector = message.createReactionCollector(filter, {time:30000})
-                collector.on("collect", (r,u) => {
-                    message.channel.send(r.emoji.name)
-                })*/
+                    
             });
         })
     }
