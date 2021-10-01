@@ -15,6 +15,7 @@
     "ffmpeg-binaries": "^3.2.2-3",
     "ffmpeg-static": "^4.4.0",
     "fs": "0.0.1-security",
+    "latest-tweets": "^1.0.4",
     "megu-randbooru": "^1.0.11",
     "mysql": "^2.18.1",
     "opusscript": "0.0.7",

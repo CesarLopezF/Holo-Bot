@@ -20,6 +20,8 @@ module.exports = {
             server.queueTime = [];
             server.queueRequestor = [];
             server.queueAdded = [];
+            server.queueAuthorName = [];
+            server.queueAuthorUrl = [];
 
             message.guild.voice.connection.disconnect();
         } 

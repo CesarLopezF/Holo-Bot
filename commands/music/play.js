@@ -18,19 +18,14 @@ module.exports = {
                 return;
             }
 
-            result = await ytsr(mensaje, {limit: 1}) 
+            var filters = await ytsr.getFilters(mensaje);
+            filter = filters.get('Type').get('Video')
+
+            result = await ytsr(filter.url, {limit: 1}) 
 
             let youtube = result.items[0]
 
-            Add(youtube.url, youtube.title, message.author.id, youtube.duration, youtube.bestThumbnail.url, message);
-
-            if(!message.guild.me.voice.connection)
-            {
-                message.member.voice.channel.join()
-                .then(connection=>{
-                    Play(connection, message)
-                })
-            }
+            Add(youtube.url, youtube.title, message.author.id, youtube.duration, youtube.bestThumbnail.url, youtube.author.name, youtube.author.url, message);
             
         } 
         else 
@@ -38,10 +33,46 @@ module.exports = {
             message.channel.send("You must be in a voice channel!");
             return;
         }
+    },
+    Add: async (url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorURL, message) => {
+        if (message.member.voice.channel)
+        {
+            var server = servers[message.guild.id];
+
+            const embed = new MessageEmbed()
+                .setColor('#DD7F3F')
+                .setTitle(`Added to the queue:`)
+                .setDescription(`[${title}](${url}) [<@${author}>]`)
+                .setFooter(`Duration: ${timestamp}`)
+
+            const added = await message.channel.send(embed);
+            
+            server.queue.push(url);
+            server.queueTitle.push(title);
+            server.queueThumbnail.push(thumbnail);
+            server.queueTime.push(timestamp);
+            server.queueRequestor.push(author);
+            server.queueAdded.push(added.id);
+            server.queueAuthorName.push(ytAuthor);
+            server.queueAuthorUrl.push(ytAuthorURL);
+
+            
+
+            if(!message.guild.me.voice.connection){
+                message.member.voice.channel.join()
+                .then(connection=>{
+                    Play(connection, message)
+                })
+            }
+        }else 
+        {
+            message.channel.send("You must be in a voice channel!");
+            return;
+        }
     }
 }
 
-async function Add(url, title, author, timestamp, thumbnail, message)
+async function Add(url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorURL, message)
 {
     var server = servers[message.guild.id];
 
@@ -59,6 +90,17 @@ async function Add(url, title, author, timestamp, thumbnail, message)
     server.queueTime.push(timestamp);
     server.queueRequestor.push(author);
     server.queueAdded.push(added.id);
+    server.queueAuthorName.push(ytAuthor);
+    server.queueAuthorUrl.push(ytAuthorURL);
+
+    
+
+    if(!message.guild.me.voice.connection){
+        message.member.voice.channel.join()
+        .then(connection=>{
+            Play(connection, message)
+        })
+    }
 }
 
 async function Play(connection, message)
@@ -71,6 +113,7 @@ async function Play(connection, message)
             .setColor('#DD7F3F')
             .setTitle("Now playing:")
             .addField("Duration: " + server.queueTime[0], "[" + server.queueTitle[0] + "](" + server.queue[0] + ")")
+            .addField("Channel: ", "[" + server.queueAuthorName[0] + "]("+ server.queueAuthorUrl +")")
             .setThumbnail(server.queueThumbnail[0])
 
     var lastmsg = await message.channel.send(embed);
@@ -91,6 +134,8 @@ async function Play(connection, message)
         server.queueTime.shift();
         server.queueRequestor.shift();
         server.queueAdded.shift();
+        server.queueAuthorName.shift()
+        server.queueAuthorUrl.shift()
 
         if(server.queue[0])
         {

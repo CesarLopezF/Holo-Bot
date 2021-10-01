@@ -2,6 +2,10 @@ const { Client, Collection } = require("discord.js");
 const { config } = require("dotenv");
 const fs = require("fs");
 
+var latestTweets = require('latest-tweets')
+ 
+//sudo npm install --unsafe-perm ffmpeg-static
+
 const client = new Client({
     disableEveryone: false
 });
@@ -23,7 +27,7 @@ config({
     require(`./handlers/${handler}`)(client);
 });
 
-client.on("ready", () => {
+client.on("ready", async () => {
     console.log(`Hi, ${client.user.username} is now online!`);
     client.user.setPresence({
         status: "online",
@@ -31,6 +35,7 @@ client.on("ready", () => {
             name: "with apples 🍎"
         }
     });
+    friday()
 });
 
 client.on("message", async message => {
@@ -146,7 +151,7 @@ client.on("message", async message => {
 
     if (!servers[message.guild.id])
     {
-        servers[message.guild.id] = {queue: [], queueTitle: [], queueThumbnail: [], queueTime: [], queueRequestor: [], queueAdded: [], links: []}
+        servers[message.guild.id] = {queue: [], queueTitle: [], queueThumbnail: [], queueTime: [], queueRequestor: [], queueAdded: [], links: [], queueAuthorName: [], queueAuthorUrl: []}
     }
 
     if (!message.member) message.member = await message.guild.fetchMember(message);
@@ -163,5 +168,29 @@ client.on("message", async message => {
         command.run(client, message, args);
 
 });
+
+function friday(){
+    var date = new Date();
+    if(date.getUTCDay() == 6 && date.getUTCHours() == 1){
+
+        latestTweets('YakuzaFriday', function (err, tweets) {
+
+            const guildsChannels = client.guilds.cache.map(guild => guild.channels.cache.get(guild.systemChannelID || channelID))
+
+            const pip = client.guilds.cache.get("226481489414586378").channels.cache.get("638605300475363350")
+        
+            guildsChannels[0] = pip;
+
+            guildsChannels.forEach(channel => {
+                channel.send(tweets[0].url)
+            })
+            
+        })
+    } else {
+        console.log("not friday night")
+        setTimeout(friday, 3600000);
+        return;
+    }
+}
 
 client.login(token);
