@@ -134,8 +134,8 @@ async function Play(connection, message)
         server.queueTime.shift();
         server.queueRequestor.shift();
         server.queueAdded.shift();
-        server.queueAuthorName.shift()
-        server.queueAuthorUrl.shift()
+        server.queueAuthorName.shift();
+        server.queueAuthorUrl.shift();
 
         if(server.queue[0])
         {
