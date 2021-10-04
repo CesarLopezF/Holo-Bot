@@ -14,14 +14,7 @@ module.exports = {
         {
             message.channel.send("I stopped... <:holoSad:613567137801437215>");
 
-            server.queue = [];
-            server.queueTitle = [];
-            server.queueThumbnail = [];
-            server.queueTime = [];
-            server.queueRequestor = [];
-            server.queueAdded = [];
-            server.queueAuthorName = [];
-            server.queueAuthorUrl = [];
+            server.music = [];
 
             message.guild.voice.connection.disconnect();
         } 

@@ -79,21 +79,25 @@ async function Add(url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorU
     const embed = new MessageEmbed()
         .setColor('#DD7F3F')
         .setTitle(`Added to the queue:`)
-        .setDescription(`[${title}](${url}) [<@${author}>]`)
+        .addField("Song: ", `[${title}](${url}) [<@${author}>]`)
+        .addField("Channel: ", "[" + ytAuthor + "]("+ ytAuthorURL +")")
         .setFooter(`Duration: ${timestamp}`)
+        .setThumbnail(thumbnail)
 
     const added = await message.channel.send(embed);
-    
-    server.queue.push(url);
-    server.queueTitle.push(title);
-    server.queueThumbnail.push(thumbnail);
-    server.queueTime.push(timestamp);
-    server.queueRequestor.push(author);
-    server.queueAdded.push(added.id);
-    server.queueAuthorName.push(ytAuthor);
-    server.queueAuthorUrl.push(ytAuthorURL);
 
-    
+    server.music.push({
+        url: url,
+        title: title,
+        thumbnail: thumbnail,
+        timestamp: timestamp,
+        author: author,
+        added: added.id,
+        authorName:ytAuthor,
+        authorUrl: ytAuthorURL,
+    })
+
+    console.log(server.music)
 
     if(!message.guild.me.voice.connection){
         message.member.voice.channel.join()
@@ -107,14 +111,14 @@ async function Play(connection, message)
 {
     var server = servers[message.guild.id];
 
-    server.dispatcher = connection.play(YTDL(server.queue[0], {highWaterMark: 1<<25}), {filter: "audioonly"});
+    server.dispatcher = connection.play(YTDL(server.music[0].url, {highWaterMark: 1<<25, filter: "audioonly"}));
     
     var embed = new MessageEmbed()
             .setColor('#DD7F3F')
             .setTitle("Now playing:")
-            .addField("Duration: " + server.queueTime[0], "[" + server.queueTitle[0] + "](" + server.queue[0] + ")")
-            .addField("Channel: ", "[" + server.queueAuthorName[0] + "]("+ server.queueAuthorUrl +")")
-            .setThumbnail(server.queueThumbnail[0])
+            .addField("Duration: " + server.music[0].timestamp, "[" + server.music[0].title + "](" + server.music[0].url + ")")
+            .addField("Channel: ", "[" + server.music[0].authorName + "]("+ server.music[0].authorUrl +")")
+            .setThumbnail(server.music[0].thumbnail)
 
     var lastmsg = await message.channel.send(embed);
     lastmsg = lastmsg.id;
@@ -124,20 +128,13 @@ async function Play(connection, message)
         message.channel.messages.fetch(lastmsg).then(async msg => {
             msg.delete();
         });
-        message.channel.messages.fetch(server.queueAdded[0]).then(async msg =>{
+        message.channel.messages.fetch(server.music[0].added).then(async msg =>{
             msg.delete();
         })
 
-        server.queue.shift();
-        server.queueTitle.shift();
-        server.queueThumbnail.shift();
-        server.queueTime.shift();
-        server.queueRequestor.shift();
-        server.queueAdded.shift();
-        server.queueAuthorName.shift();
-        server.queueAuthorUrl.shift();
+        server.music.shift()
 
-        if(server.queue[0])
+        if(server.music[0])
         {
             Play(connection, message);
         }

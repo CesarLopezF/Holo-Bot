@@ -151,7 +151,7 @@ client.on("message", async message => {
 
     if (!servers[message.guild.id])
     {
-        servers[message.guild.id] = {queue: [], queueTitle: [], queueThumbnail: [], queueTime: [], queueRequestor: [], queueAdded: [], links: [], queueAuthorName: [], queueAuthorUrl: []}
+        servers[message.guild.id] = {music: {queue, queueTitle, queueThumbnail, queueTime, queueRequestor, queueAdded, links, queueAuthorName, queueAuthorUrl} = []}
     }
 
     if (!message.member) message.member = await message.guild.fetchMember(message);
@@ -187,7 +187,6 @@ function friday(){
             
         })
     } else {
-        console.log("not friday night")
         setTimeout(friday, 3600000);
         return;
     }
