@@ -151,7 +151,7 @@ client.on("message", async message => {
 
     if (!servers[message.guild.id])
     {
-        servers[message.guild.id] = {music: {queue, queueTitle, queueThumbnail, queueTime, queueRequestor, queueAdded, links, queueAuthorName, queueAuthorUrl} = []}
+        servers[message.guild.id] = {music: {url, title, thumbnail, timestamp, author, added, authorName, authorUrl} = []}
     }
 
     if (!message.member) message.member = await message.guild.fetchMember(message);

@@ -1,6 +1,6 @@
 const ytsr = require('ytsr')
 const { MessageEmbed } = require("discord.js");
-const play = require("../music/play");
+const play = require("./play");
 module.exports = {
     name: "search",
     category: "search",
