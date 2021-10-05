@@ -21,7 +21,7 @@ module.exports = {
             embed = new MessageEmbed()
                 .setTitle("Here is what I found for: " + mensaje)
                 .setColor('#DD7F3F')
-                .setAuthor(message.author.username + ",", message.author.displayAvatarURL)
+                .setAuthor(message.author.username + ",", message.author.avatarURL())
             
             var i = 1
 

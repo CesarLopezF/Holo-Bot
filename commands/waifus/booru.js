@@ -6,7 +6,7 @@ const { RichEmbed } = require("discord.js");
 module.exports = {
     name: "b",
     category: "waifus",
-    description: "sends a random image form a selected waifu",
+    description: "sends a random image from a selected waifu",
     usage: "b",
     run: async (client, message, args) => {
         message.channel.send("Out of comission");

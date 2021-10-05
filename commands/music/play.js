@@ -14,12 +14,14 @@ module.exports = {
             mensaje = message.content.toString().split( "-play ");
             mensaje = mensaje[1];
             
-            if(!mensaje){
+            if(!mensaje)
+            {
                 message.channel.send("Search for a youtube video!");
                 return;
             }
 
-            if(mensaje.includes("list=")){
+            if(mensaje.includes("list="))
+            {
                 ytpl(mensaje).then(async result => {
                     const embed = new MessageEmbed()
                         .setColor('#DD7F3F')
@@ -33,7 +35,8 @@ module.exports = {
                         AddPlayList(song.url, song.title, message.author.id, song.duration, song.bestThumbnail.url, song.author.name, song.author.url, message)
                     })
                 })
-            } else {
+            } else 
+            {
                 var filters = await ytsr.getFilters(mensaje);
                 filter = filters.get('Type').get('Video')
     
@@ -122,6 +125,29 @@ async function Add(url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorU
     }
 }
 
+async function AddPlayList(url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorURL, message)
+{
+    var server = servers[message.guild.id];
+
+    server.music.push({
+        url: url,
+        title: title,
+        thumbnail: thumbnail,
+        timestamp: timestamp,
+        author: author,
+        added: null,
+        authorName:ytAuthor,
+        authorUrl: ytAuthorURL,
+    })
+
+    if(!message.guild.me.voice.connection){
+        message.member.voice.channel.join()
+        .then(connection=>{
+            Play(connection, message)
+        })
+    }
+}
+
 async function Play(connection, message)
 {
     var server = servers[message.guild.id];
@@ -163,27 +189,4 @@ async function Play(connection, message)
     });
 
     server.dispatcher.on('error', console.error);
-}
-
-async function AddPlayList(url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorURL, message)
-{
-    var server = servers[message.guild.id];
-
-    server.music.push({
-        url: url,
-        title: title,
-        thumbnail: thumbnail,
-        timestamp: timestamp,
-        author: author,
-        added: null,
-        authorName:ytAuthor,
-        authorUrl: ytAuthorURL,
-    })
-
-    if(!message.guild.me.voice.connection){
-        message.member.voice.channel.join()
-        .then(connection=>{
-            Play(connection, message)
-        })
-    }
 }

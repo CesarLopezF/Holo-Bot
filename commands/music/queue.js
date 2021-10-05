@@ -10,7 +10,7 @@ module.exports = {
 
         var embed = new MessageEmbed()
             .setColor('#DD7F3F')
-            .setAuthor(message.author.username + ",", message.author.displayAvatarURL)
+            .setAuthor(message.author.username + ",", message.author.avatarURL())
             
         if (server.music.length > 0)
         {
@@ -68,7 +68,7 @@ module.exports = {
 
                     var editedEmbed = new MessageEmbed()
                         .setColor('#DD7F3F')
-                        .setAuthor(message.author.username + ",", message.author.displayAvatarURL)
+                        .setAuthor(message.author.username + ",", message.author.avatarURL())
                         .setTitle("All music in queue:")
                         .setThumbnail("https://cdn.discordapp.com/emojis/712807334253953094.gif")
 
