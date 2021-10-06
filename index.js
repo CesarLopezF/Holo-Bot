@@ -12,7 +12,7 @@ const client = new Client({
 
 global.servers = {};
 
-token = "Njg5MDM1MjI1OTc5ODEzODk0.Xm9ADw.c2TDdl5DaHp-QpHeUVnHaOjytGE";
+token = "Njg5MDM1MjI1OTc5ODEzODk0.Xm9ADw.jzWckwSChCdmZ__-Q7zWLzojSbM";
 
 client.commands = new Collection();
 client.aliases = new Collection();

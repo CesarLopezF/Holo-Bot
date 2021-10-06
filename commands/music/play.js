@@ -35,6 +35,31 @@ module.exports = {
                         AddPlayList(song.url, song.title, message.author.id, song.duration, song.bestThumbnail.url, song.author.name, song.author.url, message)
                     })
                 })
+            } else if(mensaje.includes("youtube.com/watch?"))
+            {
+                ytdl.getBasicInfo(mensaje).then(result => {
+                    var info = result.videoDetails
+
+                    if(info.lengthSeconds == 0){
+                        var ret = "LIVE"
+                        var live = true
+                    } else {
+                        var hrs = ~~(info.lengthSeconds / 3600);
+                        var mins = ~~((info.lengthSeconds % 3600) / 60);
+                        var secs = ~~info.lengthSeconds % 60;
+    
+                        // Output like "1:01" or "4:03:59" or "123:03:59"
+                        var ret = "";
+                        if (hrs > 0) {
+                            ret += "" + hrs + ":" + (mins < 10 ? "0" : "");
+                        }
+                        ret += "" + mins + ":" + (secs < 10 ? "0" : "");
+                        ret += "" + secs;
+                    }
+    
+                    Add(info.video_url, info.title, message.author.id, ret, info.thumbnails[info.thumbnails.length-1].url, info.author.name, info.author.user_url, message, live)
+                })
+
             } else 
             {
                 var filters = await ytsr.getFilters(mensaje);
@@ -43,8 +68,15 @@ module.exports = {
                 result = await ytsr(filter.url, {limit: 1}) 
     
                 let youtube = result.items[0]
+
+                if(!youtube.duration){
+                    var duration = "LIVE"
+                    var live = true;
+                } else {
+                    var duration = youtube.duration
+                }
     
-                Add(youtube.url, youtube.title, message.author.id, youtube.duration, youtube.bestThumbnail.url, youtube.author.name, youtube.author.url, message);
+                Add(youtube.url, youtube.title, message.author.id, duration, youtube.bestThumbnail.url, youtube.author.name, youtube.author.url, message, live);
             }
             
         } 
@@ -62,7 +94,8 @@ module.exports = {
             const embed = new MessageEmbed()
                 .setColor('#DD7F3F')
                 .setTitle(`Added to the queue:`)
-                .setDescription(`[${title}](${url}) [<@${author}>]`)
+                .addField("Song: ", `[${title}](${url}) [<@${author}>]`)
+                .addField("Channel: ", "[" + ytAuthor + "]("+ ytAuthorURL +")")
                 .setFooter(`Duration: ${timestamp}`)
 
             const added = await message.channel.send(embed);
@@ -92,7 +125,7 @@ module.exports = {
     }
 }
 
-async function Add(url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorURL, message)
+async function Add(url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorURL, message, live)
 {
     var server = servers[message.guild.id];
 
@@ -102,7 +135,6 @@ async function Add(url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorU
         .addField("Song: ", `[${title}](${url}) [<@${author}>]`)
         .addField("Channel: ", "[" + ytAuthor + "]("+ ytAuthorURL +")")
         .setFooter(`Duration: ${timestamp}`)
-        .setThumbnail(thumbnail)
 
     const added = await message.channel.send(embed);
 
@@ -120,7 +152,7 @@ async function Add(url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorU
     if(!message.guild.me.voice.connection){
         message.member.voice.channel.join()
         .then(connection=>{
-            Play(connection, message)
+            Play(connection, message, live)
         })
     }
 }
@@ -148,11 +180,20 @@ async function AddPlayList(url, title, author, timestamp, thumbnail, ytAuthor, y
     }
 }
 
-async function Play(connection, message)
+async function Play(connection, message, live)
 {
     var server = servers[message.guild.id];
 
-    server.dispatcher = connection.play(ytdl(server.music[0].url, {highWaterMark: 1<<25, filter: "audioonly"}));
+    if(live)
+    {
+        var options = {highWaterMark: 1<<25}
+    }   
+    else 
+    {
+        var options = {highWaterMark: 1<<25, filter: "audioonly"}
+    }
+
+    server.dispatcher = connection.play(ytdl(server.music[0].url, options));
     
     var embed = new MessageEmbed()
             .setColor('#DD7F3F')
@@ -179,7 +220,12 @@ async function Play(connection, message)
 
         if(server.music[0])
         {
-            Play(connection, message);
+            if(server.music[0].timestamp == "LIVE"){
+                var live = true;
+                Play(connection, message, live);
+            } else {
+                Play(connection, message);
+            }
         }
         else
         {
