@@ -20,8 +20,6 @@ module.exports = (client) => {
                 table.addRow(file, `❌  -> missing a help.name, or help.name is not a string.`);
                 continue;
             }
-    
-            if (pull.aliases && Array.isArray(pull.aliases)) pull.aliases.forEach(alias => client.aliases.set(alias, pull.name));
         }
     });
     console.log(table.toString());

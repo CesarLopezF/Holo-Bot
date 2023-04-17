@@ -3,14 +3,14 @@ module.exports = {
     category: "music",
     description: "shuffles the queue",
     usage: "shuffle",
-    run: async (client, message, args) => {
-        var server = servers[message.guild.id];
+    run: async (client, interaction, args) => {
+        var server = servers[interaction.guild.id];
 
-        if(!message.guild.me.voice.connection)
+        if(!interaction.member.voice.channel.id)
         {
-            message.channel.send("What are you trying to do? I am not even in a voice channel... <:holoLaugh:712812696772411403>");
+            interaction.reply("What are you trying to do? I am not even in a voice channel... <:holoLaugh:712812696772411403>");
         }
-        else if (message.member.voice.channel === message.guild.voice.connection.channel)
+        else if (server.player && interaction.member.voice.channel.id)
         {
             var first = server.music[0];
 
@@ -20,11 +20,9 @@ module.exports = {
 
             server.music.unshift(first);
 
-            message.channel.send("The current music queue has been shuffled")
-        } 
-        else if(message.member.voice.channel != message.guild.voice.connection.channel)
-        {
-            message.channel.send("We must be in the same voice channel to stop the queue!");
+            interaction.reply("The current queue has been shuffled")
+
+            console.log(`${interaction.user.username} has shuffled the queue`)
         }
     }
 }

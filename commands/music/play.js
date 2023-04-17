@@ -1,43 +1,81 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, Events} = require("discord.js");
+const { joinVoiceChannel , createAudioPlayer , createAudioResource, AudioPlayerStatus} = require('@discordjs/voice')
 const ytsr = require('ytsr')
 const ytdl = require('ytdl-core');
 const ytpl = require('ytpl');
+
+var timeout;
+
 module.exports = {
     name: "play",
     category: "music",
     description: "plays a video",
     usage: "play",
-    run: async (client, message, args) => {
+    run: async (client, interaction, args) => {
 
-        if (message.member.voice.channel)
+        if (interaction.member.voice.channel.id)
         {
-            mensaje = message.content.toString().split( "-play ");
-            mensaje = mensaje[1];
             
-            if(!mensaje)
+            if(!args)
             {
-                message.channel.send("Search for a youtube video!");
+                interaction.reply("Search for a youtube video!");
                 return;
             }
 
-            if(mensaje.includes("list="))
+            clearTimeout(timeout);
+
+            if(args.includes("list="))
             {
-                ytpl(mensaje).then(async result => {
-                    const embed = new MessageEmbed()
+                ytpl(args).then(async result => {
+
+                    const embed = new EmbedBuilder()
                         .setColor('#DD7F3F')
-                        .setTitle(`Added songs from the playlist: ${result.title}`)
-                        .setDescription(`${result.estimatedItemCount} songs added`)
+                        .setTitle(`Added videos from the playlist: ${result.title}`)
+                        .setDescription(`${result.estimatedItemCount} videos added`)
                         .setThumbnail(result.bestThumbnail.url)
     
-                    await message.channel.send(embed);
+                    await interaction.reply({embeds:[embed]});
+
+                    var firstSong;
+
+                    if(args.includes("watch?")){
+
+                        firstSong = args.split("&list=")[0]
+
+                        await ytdl.getBasicInfo(firstSong).then(async result => {
+                            var info = result.videoDetails
+        
+                            if(info.lengthSeconds == 0){
+                                var ret = "LIVE"
+                                var live = true
+                            } else {
+                                var hrs = ~~(info.lengthSeconds / 3600);
+                                var mins = ~~((info.lengthSeconds % 3600) / 60);
+                                var secs = ~~info.lengthSeconds % 60;
+            
+                                // Output like "1:01" or "4:03:59" or "123:03:59"
+                                var ret = "";
+                                if (hrs > 0) {
+                                    ret += "" + hrs + ":" + (mins < 10 ? "0" : "");
+                                }
+                                ret += "" + mins + ":" + (secs < 10 ? "0" : "");
+                                ret += "" + secs;
+                            }
+            
+                            Add(info.video_url, info.title, interaction.user.id, ret, info.thumbnails[info.thumbnails.length-1].url, info.author.name, info.author.user_url, interaction, client, live)
+                        })
+                    }
     
                     result.items.forEach(song => {
-                        AddPlayList(song.url, song.title, message.author.id, song.duration, song.bestThumbnail.url, song.author.name, song.author.url, message)
+                        if(song.url.includes(firstSong)){
+                        } else {
+                            Add(song.url, song.title, interaction.user.id, song.duration, song.bestThumbnail.url, song.author.name, song.author.url, interaction, client)
+                        }
                     })
                 })
-            } else if(mensaje.includes("youtube.com/watch?"))
+            } else if(args.includes("youtube.com/watch?"))
             {
-                ytdl.getBasicInfo(mensaje).then(result => {
+                ytdl.getBasicInfo(args).then(async result => {
                     var info = result.videoDetails
 
                     if(info.lengthSeconds == 0){
@@ -56,13 +94,23 @@ module.exports = {
                         ret += "" + mins + ":" + (secs < 10 ? "0" : "");
                         ret += "" + secs;
                     }
+                    
+                    const embed = new EmbedBuilder()
+                        .setColor('#DD7F3F')
+                        .setTitle(`Added to the queue:`)
+                        .addFields({name: "Video: ", value: `[${info.title}](${info.video_url}) [<@${interaction.user.id}>]`})
+                        .addFields({name: "Channel: ", value: "[" + info.author.name + "]("+ info.author.user_url +")"})
+                        .setThumbnail(info.thumbnails[info.thumbnails.length-1].url)
+                        .setFooter({text: `Duration: ${ret}`})
+
+                    await interaction.reply({embeds:[embed]});
     
-                    Add(info.video_url, info.title, message.author.id, ret, info.thumbnails[info.thumbnails.length-1].url, info.author.name, info.author.user_url, message, live)
+                    Add(info.video_url, info.title, interaction.user.id, ret, info.thumbnails[info.thumbnails.length-1].url, info.author.name, info.author.user_url, interaction, client, live)
                 })
 
             } else 
             {
-                var filters = await ytsr.getFilters(mensaje);
+                var filters = await ytsr.getFilters(args);
                 filter = filters.get('Type').get('Video')
     
                 result = await ytsr(filter.url, {limit: 1}) 
@@ -75,114 +123,135 @@ module.exports = {
                 } else {
                     var duration = youtube.duration
                 }
+
+                const embed = new EmbedBuilder()
+                    .setColor('#DD7F3F')
+                    .setTitle(`Added to the queue:`)
+                    .addFields({name: "Video: ", value: `[${youtube.title}](${youtube.url}) [<@${interaction.user.id}>]`})
+                    .addFields({name: "Channel: ", value: "[" + youtube.author.name + "]("+ youtube.author.url +")"})
+                    .setThumbnail(youtube.bestThumbnail.url)
+                    .setFooter({text:`Duration: ${youtube.duration}`})
+
+                await interaction.reply({embeds:[embed]});
     
-                Add(youtube.url, youtube.title, message.author.id, duration, youtube.bestThumbnail.url, youtube.author.name, youtube.author.url, message, live);
+                Add(youtube.url, youtube.title, interaction.user.id, duration, youtube.bestThumbnail.url, youtube.author.name, youtube.author.url, interaction, client, live);
             }
             
         } 
         else 
         {
-            message.channel.send("You must be in a voice channel!");
+            interaction.reply("You must be in a voice channel!");
             return;
         }
     },
-    Add: async (url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorURL, message) => {
-        if (message.member.voice.channel)
+    Add: async (url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorURL, interaction, client) => {
+        if (interaction.member.voice.channel)
         {
-            var server = servers[message.guild.id];
+            var server = servers[interaction.guild.id];
 
-            const embed = new MessageEmbed()
+            const embed = new EmbedBuilder()
                 .setColor('#DD7F3F')
                 .setTitle(`Added to the queue:`)
-                .addField("Song: ", `[${title}](${url}) [<@${author}>]`)
-                .addField("Channel: ", "[" + ytAuthor + "]("+ ytAuthorURL +")")
-                .setFooter(`Duration: ${timestamp}`)
+                .addFields({ name: "Video: ", value: `[${title}](${url}) [<@${author}>]` })
+                .addFields({ name: "Channel: ", value: "[" + ytAuthor + "]("+ ytAuthorURL +")" })
+                .setThumbnail(thumbnail)
+                .setFooter({ text: `Duration: ${timestamp}` })
 
-            const added = await message.channel.send(embed);
+            const added = await interaction.channel.send({embeds:[embed]});
             
-            server.music.push({
-                url: url,
-                title: title,
-                thumbnail: thumbnail,
-                timestamp: timestamp,
-                author: author,
-                added: added.id,
-                authorName:ytAuthor,
-                authorUrl: ytAuthorURL,
-            })
+            if(!server.music[0]){
 
-            if(!message.guild.me.voice.connection){
-                message.member.voice.channel.join()
-                .then(connection=>{
-                    Play(connection, message)
+                server.music.push({
+                    url: url,
+                    title: title,
+                    thumbnail: thumbnail,
+                    timestamp: timestamp,
+                    author: author,
+                    added: added.id,
+                    authorName:ytAuthor,
+                    authorUrl: ytAuthorURL,
+                })
+
+                const connection = joinVoiceChannel({
+                    channelId: interaction.member.voice.channel.id,
+                    guildId: interaction.guildId,
+                    adapterCreator: interaction.guild.voiceAdapterCreator,
+                });
+        
+                const player = createAudioPlayer();
+        
+                Play(connection, player, interaction, client)
+                
+            } else {
+                server.music.push({
+                    url: url,
+                    title: title,
+                    thumbnail: thumbnail,
+                    timestamp: timestamp,
+                    author: author,
+                    added: added.id,
+                    authorName:ytAuthor,
+                    authorUrl: ytAuthorURL,
                 })
             }
+
+            console.log(`${interaction.user.username} has added the song ${title} to the queue`)
+            
         }else 
         {
-            message.channel.send("You must be in a voice channel!");
+            interaction.reply("You must be in a voice channel!");
             return;
         }
     }
 }
 
-async function Add(url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorURL, message, live)
+async function Add(url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorURL, interaction, client, live)
 {
-    var server = servers[message.guild.id];
+    var server = servers[interaction.guild.id];
 
-    const embed = new MessageEmbed()
-        .setColor('#DD7F3F')
-        .setTitle(`Added to the queue:`)
-        .addField("Song: ", `[${title}](${url}) [<@${author}>]`)
-        .addField("Channel: ", "[" + ytAuthor + "]("+ ytAuthorURL +")")
-        .setFooter(`Duration: ${timestamp}`)
+    if(!server.music[0]){
 
-    const added = await message.channel.send(embed);
-
-    server.music.push({
-        url: url,
-        title: title,
-        thumbnail: thumbnail,
-        timestamp: timestamp,
-        author: author,
-        added: added.id,
-        authorName:ytAuthor,
-        authorUrl: ytAuthorURL,
-    })
-
-    if(!message.guild.me.voice.connection){
-        message.member.voice.channel.join()
-        .then(connection=>{
-            Play(connection, message, live)
+        server.music.push({
+            url: url,
+            title: title,
+            thumbnail: thumbnail,
+            timestamp: timestamp,
+            author: author,
+            authorName:ytAuthor,
+            authorUrl: ytAuthorURL,
         })
+
+        const connection = joinVoiceChannel({
+            channelId: interaction.member.voice.channel.id,
+            guildId: interaction.guildId,
+            adapterCreator: interaction.guild.voiceAdapterCreator,
+        });
+
+        const player = createAudioPlayer();
+
+        Play(connection, player, interaction, client, live)
+
+    } else {
+
+        server.music.push({
+            url: url,
+            title: title,
+            thumbnail: thumbnail,
+            timestamp: timestamp,
+            author: author,
+            authorName:ytAuthor,
+            authorUrl: ytAuthorURL,
+        })
+
     }
+
+    console.log(`${interaction.user.username} has added the song ${title} to the queue`)
 }
 
-async function AddPlayList(url, title, author, timestamp, thumbnail, ytAuthor, ytAuthorURL, message)
+async function Play(connection, player, interaction, client, live)
 {
-    var server = servers[message.guild.id];
 
-    server.music.push({
-        url: url,
-        title: title,
-        thumbnail: thumbnail,
-        timestamp: timestamp,
-        author: author,
-        added: null,
-        authorName:ytAuthor,
-        authorUrl: ytAuthorURL,
-    })
-
-    if(!message.guild.me.voice.connection){
-        message.member.voice.channel.join()
-        .then(connection=>{
-            Play(connection, message)
-        })
-    }
-}
-
-async function Play(connection, message, live)
-{
-    var server = servers[message.guild.id];
+    var server = servers[interaction.guild.id];
 
     if(live)
     {
@@ -193,46 +262,229 @@ async function Play(connection, message, live)
         var options = {highWaterMark: 1<<25, filter: "audioonly"}
     }
 
-    server.dispatcher = connection.play(ytdl(server.music[0].url, options));
-    
-    var embed = new MessageEmbed()
+    server.player = player
+    server.connection = connection
+
+    server.player.play(createAudioResource(ytdl(server.music[0].url, options)));
+    server.connectionSub = connection.subscribe(server.player)
+
+    var buttons = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId('pause')
+                .setLabel('Pause')
+                .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder()
+                .setCustomId('skip')
+                .setLabel('Skip')
+                .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder()
+                .setCustomId('stop')
+                .setLabel('Stop')
+                .setStyle(ButtonStyle.Danger),
+        )
+
+    var embed = new EmbedBuilder()
             .setColor('#DD7F3F')
             .setTitle("Now playing:")
-            .addField("Duration: " + server.music[0].timestamp, "[" + server.music[0].title + "](" + server.music[0].url + ")")
-            .addField("Channel: ", "[" + server.music[0].authorName + "]("+ server.music[0].authorUrl +")")
+            .addFields({name: "Video: ", value: "[" + server.music[0].title + "](" + server.music[0].url + ")"})
+            .addFields({name: "Channel: ", value: "[" + server.music[0].authorName + "]("+ server.music[0].authorUrl +")"})
             .setThumbnail(server.music[0].thumbnail)
+            .setFooter({text: "Duration: " + server.music[0].timestamp})
 
-    var lastmsg = await message.channel.send(embed);
-    lastmsg = lastmsg.id;
+    latestmsg = await interaction.channel.send({embeds: [embed], components: [buttons]});
+    server.latestmsg = latestmsg
 
-    server.dispatcher.on("finish", function()
+    console.log(`Now playing ${server.music[0].title}`)
+
+    server.player.on(AudioPlayerStatus.Idle, async () =>
     {
-        message.channel.messages.fetch(lastmsg).then(async msg => {
-            msg.delete();
-        });
-        if(server.music[0].added){
-            message.channel.messages.fetch(server.music[0].added).then(async msg =>{
-                msg.delete();
-            })
-        }
+
+        client.channels.fetch(interaction.channel.id).then(channel => {
+            channel.messages.delete(latestmsg.id)
+        })
+
+        console.log(`Song ${server.music[0].title} has finished playing`)
 
         server.music.shift()
-
+        
         if(server.music[0])
         {
+
             if(server.music[0].timestamp == "LIVE"){
-                var live = true;
-                Play(connection, message, live);
+                var options = {highWaterMark: 1<<25}
             } else {
-                Play(connection, message);
+                var options = {highWaterMark: 1<<25, filter: "audioonly"}
             }
+
+            var embed = new EmbedBuilder()
+                .setColor('#DD7F3F')
+                .setTitle("Now playing:")
+                .addFields({name: "Video: ", value: "[" + server.music[0].title + "](" + server.music[0].url + ")"})
+                .addFields({name: "Channel: ", value: "[" + server.music[0].authorName + "]("+ server.music[0].authorUrl +")"})
+                .setThumbnail(server.music[0].thumbnail)
+                .setFooter({text: "Duration: " + server.music[0].timestamp})
+
+            latestmsg = await interaction.channel.send({embeds: [embed], components: [buttons]});
+            server.latestmsg = latestmsg
+
+            console.log(`Now playing ${server.music[0].title}`)
+
+            server.player.play(createAudioResource(ytdl(server.music[0].url, options)));
+
+        } else {
+
+            timeout = setTimeout(async () => {
+
+                connection.disconnect();
+
+                var embed = new EmbedBuilder()
+                    .setColor('#DD7F3F')
+                    .setTitle("Queue finished:")
+                    .setDescription('No more songs to play! Disconnecting')
+
+                await interaction.channel.send({embeds:[embed]});
+
+                console.log(`No more songs to play. Disconnecting from Voice Channel`)
+
+            }, 600000);
+
         }
-        else
-        {
-            message.channel.send("All music has been played. <:holoSleepy:612894366041899009>");
-            connection.disconnect();
-        }
+
     });
 
-    server.dispatcher.on('error', console.error);
+    server.player.on('error', error => {
+        console.error(`Error: ${error.message} with resource ${server.music[0].title}`)
+    });
+
+    client.on(Events.InteractionCreate, async inter => {
+        if (!inter.isButton()) return;
+
+        if(inter.customId == 'pause'){
+            server.player.pause()
+            console.log(`${inter.user.username} has paused the queue`);
+
+            buttons = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('resume')
+                        .setLabel('Resume')
+                        .setStyle(ButtonStyle.Success),
+                    new ButtonBuilder()
+                        .setCustomId('skip')
+                        .setLabel('Skip')
+                        .setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId('stop')
+                        .setLabel('Stop')
+                        .setStyle(ButtonStyle.Danger),
+                )
+            
+            var embed = new EmbedBuilder()
+                .setColor('#DD7F3F')
+                .setTitle("Now playing:")
+                .setAuthor({name: `Paused by ${inter.user.username}` , iconURL: inter.user.avatarURL()})
+                .addFields({name: "Video: ", value: "[" + server.music[0].title + "](" + server.music[0].url + ")"})
+                .addFields({name: "Channel: ", value: "[" + server.music[0].authorName + "]("+ server.music[0].authorUrl +")"})
+                .setThumbnail(server.music[0].thumbnail)
+                .setFooter({text: "Duration: " + server.music[0].timestamp})
+
+            inter.update({embeds: [embed], components: [buttons]})
+        }
+        else if(inter.customId == 'resume'){
+            server.player.unpause()
+            console.log(`${inter.user.username} has resumed the queue`);
+            buttons = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('pause')
+                        .setLabel('Pause')
+                        .setStyle(ButtonStyle.Primary),
+                    new ButtonBuilder()
+                        .setCustomId('skip')
+                        .setLabel('Skip')
+                        .setStyle(ButtonStyle.Secondary),
+                    new ButtonBuilder()
+                        .setCustomId('stop')
+                        .setLabel('Stop')
+                        .setStyle(ButtonStyle.Danger),
+                )
+            
+            var embed = new EmbedBuilder()
+                .setColor('#DD7F3F')
+                .setTitle("Now playing:")
+                .setAuthor({name: `Resumed by ${inter.user.username}` , iconURL: inter.user.avatarURL()})
+                .addFields({name: "Video: ", value: "[" + server.music[0].title + "](" + server.music[0].url + ")"})
+                .addFields({name: "Channel: ", value: "[" + server.music[0].authorName + "]("+ server.music[0].authorUrl +")"})
+                .setThumbnail(server.music[0].thumbnail)
+                .setFooter({text: "Duration: " + server.music[0].timestamp})
+
+            inter.update({embeds: [embed], components: [buttons]})
+        }
+        else if(inter.customId == 'skip'){
+            console.log(`${inter.user.username} has skipped ${server.music[0].title}`)
+            server.music.shift()
+
+            if(!server.music[0]) 
+            {
+
+                var embed = new EmbedBuilder()
+                    .setColor('#DD7F3F')
+                    .setTitle("Queue finished:")
+                    .setDescription('No more songs to play! Disconnecting')
+
+                await inter.update({embeds:[embed], components: []});
+                server.connection.destroy();
+                return
+            }
+
+            
+            await inter.update(`The song has been skipped`)
+
+            client.channels.fetch(interaction.channel.id).then(channel => {
+                channel.messages.delete(latestmsg.id)
+            })
+            
+
+            var embed = new EmbedBuilder()
+                .setColor('#DD7F3F')
+                .setTitle("Now playing:")
+                .addFields({name: "Video: ", value: "[" + server.music[0].title + "](" + server.music[0].url + ")"})
+                .addFields({name: "Channel: ", value: "[" + server.music[0].authorName + "]("+ server.music[0].authorUrl +")"})
+                .setThumbnail(server.music[0].thumbnail)
+                .setFooter({text: "Duration: " + server.music[0].timestamp})
+
+            latestmsg = await inter.channel.send({embeds: [embed], components: [buttons]});
+            server.latestmsg = latestmsg
+
+            server.player.play(createAudioResource(ytdl(server.music[0].url, options)));
+
+            console.log(`Now playing ${server.music[0].title}`)
+            
+        }
+        else if(inter.customId == 'stop'){
+
+            server.music = [];
+            server.connection.destroy();
+            console.log(`${inter.user.username} has stopped the queue`);
+
+            
+            await inter.update(`The queue has been stopped`)
+
+            client.channels.fetch(interaction.channel.id).then(channel => {
+                channel.messages.delete(latestmsg.id)
+            })
+        
+
+            var embed = new EmbedBuilder()
+                .setColor('#DD7F3F')
+                .setAuthor({name: `Stopped by ${inter.user.username}` , iconURL: inter.user.avatarURL()})
+                .setTitle("Queue finished:")
+                .setDescription('No more songs to play! Disconnecting')
+
+            await inter.channel.send({embeds:[embed]});
+            
+        }
+
+    });
 }

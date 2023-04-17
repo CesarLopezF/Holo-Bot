@@ -1,21 +1,75 @@
-const { Client, Collection } = require("discord.js");
+const { Client, Collection, GatewayIntentBits, REST, Routes, SlashCommandBuilder } = require('discord.js');
 const { config } = require("dotenv");
 const fs = require("fs");
+const spawn = require("child_process").spawn;
+require('log-timestamp')(function() { return '[' + new Date().toLocaleString() + ']' });
 
 var latestTweets = require('latest-tweets')
+
+token = "";
+clientID = '689035225979813894'
  
 //sudo npm install --unsafe-perm ffmpeg-static
 
-const client = new Client({
-    disableEveryone: false
+const client = new Client({ 
+    intents: [
+		GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildPresences,
+        GatewayIntentBits.GuildMessageReactions,
+        GatewayIntentBits.DirectMessages,
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildEmojisAndStickers,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildModeration,
+	],
 });
+
+const commands = [
+    new SlashCommandBuilder()
+        .setName('play')
+        .setDescription('Plays a song from youtube')
+        .addStringOption(option =>
+            option.setName('search')
+                .setDescription('Song to search')
+                .setRequired(true)
+            )
+    , new SlashCommandBuilder()
+        .setName('search')
+        .setDescription('Searches for a youtube song')
+        .addStringOption(option =>
+            option.setName('search')
+                .setDescription('Video to search')
+                .setRequired(true)
+            )
+    , new SlashCommandBuilder()
+        .setName('queue')
+        .setDescription('Sends the current queue')
+    , new SlashCommandBuilder()
+        .setName('nh')
+        .setDescription('Returns an either random or searched for lucky number')
+        .addStringOption(option =>
+            option.setName('search')
+                .setDescription('Number to search')
+            )
+  ];
+
+const rest = new REST({ version: '10' }).setToken(token);
+
+(async () => {
+    try {
+  
+      await rest.put(Routes.applicationCommands(clientID), { body: commands });
+
+    } catch (error) {
+      console.error(error);
+    }
+  })();
 
 global.servers = {};
 
-token = "Njg5MDM1MjI1OTc5ODEzODk0.Xm9ADw.jzWckwSChCdmZ__-Q7zWLzojSbM";
-
 client.commands = new Collection();
-client.aliases = new Collection();
 
 client.categories = fs.readdirSync("./commands/");
 
@@ -35,161 +89,49 @@ client.on("ready", async () => {
             name: "with apples 🍎"
         }
     });
-    friday()
+
+    checkDay()
+
 });
 
-client.on("message", async message => {
-    const prefix = "-";
-    
-    if (message.author.bot) return;
-    if (!message.guild) return;
-    
-    if(message.content.toLowerCase().includes("fuck you")){
-        message.channel.send("FAKAA YOU <:angry:691582873177686026>");
-    }
+client.on("interactionCreate", async interaction =>
+{
+    if (!interaction.isChatInputCommand()) return;
 
-    if(message.content.toLowerCase() == "oof"){
-        message.channel.send("That's a big oof");
-    }
-
-    if(message.content.toLowerCase().includes("quiero morir")){
-        message.channel.send("🎵 Quiero morir, quiero matarme! 🎵");
-        message.channel.send("🎵 Yo solo quiero SUICIDARME! 🎵");
-    }
-    
-    if(message.content.toLowerCase().includes("not stonks")){
-        message.channel.send("https://tenor.com/view/not-stonks-profit-down-sad-frown-arms-crossed-gif-15684535");
-    } else if(message.content.toLowerCase().includes("stonks")){
-        message.channel.send("https://tenor.com/view/stonks-up-stongs-meme-stocks-gif-15715298");
-    }
-
-    if(message.content.toLowerCase().startsWith("solo ")){
-        message.channel.send("<:4head:632858961804263424>");
-    }
-
-    if(message.content.toLowerCase().startsWith("4h")){
-        message.channel.send("<:4head:632858961804263424>");
-    }
-    
-    if(message.content.toLowerCase().includes("fuck off") && message.author.id == "180499460642570240"){
-        message.channel.send("Ye, fuck off <:holoSmug:712919248586014740>");
-    }
-
-    if(message.content.toLowerCase().includes("succ")){
-        message.channel.send("https://tenor.com/view/astolfo-plushy-gif-13306557");
-    }
-
-    if(message.content.toLowerCase() == "daga"){
-        const daga = ["kotowaru" , "otoko da"];
-        const choice = daga[Math.floor(Math.random() * daga.length)];
-        var length = choice.length;
-        message.channel.send(choice);
-        if (choice == "kotowaru"){
-            message.channel.send("https://tenor.com/view/rohan-jjba-daga-kotowaru-irefuse-refuse-gif-7385649");
-        }else if (choice == "otoko da"){
-            message.channel.send("https://tenor.com/view/ruka-steins-gate-otoko-gif-5659410").then(function(message) {
-                message.react("463808579187507201")});
-        }
-    }
-
-    if(message.content.toLowerCase() == "unlimited"){
-        const unlimited = ["9 lives " , "rulebook", "gameplay", "blade works", "power ", "<:quiubo:561769076184317972>", "budget works", "bath", "O~chinchin"];
-        var choice = unlimited[Math.floor(Math.random() * unlimited.length)];
-        var length = choice.length;
-        if (choice == "<:quiubo:561769076184317972>"){
-            length = 3;
-        } else if(choice == "9 lives "){
-            length = 6;
-        } else if (choice == "power "){
-            length = 6;
-        }
-        for (length; length <= 12; length++){
-            choice += "  ";
-        }
-        message.channel.send("||" + choice + "||");
-    }
-
-    if(message.content.toLowerCase() == "love"){
-        message.channel.send("Ai... rabu... yu!");
-        message.channel.send("https://tenor.com/view/ilove-you-anime-golden-time-kaga-kouko-kouko-kaga-gif-13405127").then(function(message) {
-            message.react("691575531128356914")});
-    }
-
-    if(message.content.toLowerCase() == "darling"){
-        message.channel.send("Ha ba ba... Ha babadegada.. Hababadadeba <:ButIWant:689742395683897354>");
-        message.channel.send("https://tenor.com/view/darling-in-the-franxx-excited-angry-mad-pissed-gif-12295839").then(function(message) {
-            message.react("689742395683897354")
-            message.react("683565194680598531")});
-    }
-
-    if(message.content == "<:holoSleepy:612894366041899009>"){
-        message.channel.send("<:holoSleepy:612894366041899009>");
-    }
-    if(message.content.includes("<:holoLove:691575531128356914>")){ 
-        message.channel.send("<:holoLove:691575531128356914>");
-    }
-    if (message.content.includes("<:holoDrink:632869932928860160>")){
-        message.channel.send("https://tenor.com/view/holo-enos_n-spice-and-wolf-holo-the-wisewolf-anime-gif-14248698")
-    }
-
-    if(message.content.toLowerCase() == "animal"){
-        message.channel.send("動物 Ee");
-    }
-
-    if(message.content.toLowerCase().includes("nice")){
-        message.channel.send("NICE NICE NICE NICE NICE NICE NICE");
-    }
-
-    if(message.content.toLowerCase() == "mi bb" || message.content.toLowerCase() == "astolfo"){
-        await message.channel.send({files: ['https://cdn.discordapp.com/attachments/222075405056737282/473176308025786420/T1.png']});
-        await message.channel.send({files: ['https://cdn.discordapp.com/attachments/222075405056737282/473176314250002432/T2.png']});
-        await message.channel.send({files: ['https://cdn.discordapp.com/attachments/222075405056737282/473176316615852071/T3.png']});
-        await message.channel.send({files: ['https://cdn.discordapp.com/attachments/222075405056737282/473176321527250954/T4.png']});
-    }
-    
-    if (!message.content.startsWith(prefix)) return;
-
-    if (!servers[message.guild.id])
+    if (!servers[interaction.guild.id])
     {
-        servers[message.guild.id] = {music: {url, title, thumbnail, timestamp, author, added, authorName, authorUrl} = []}
+        servers[interaction.guild.id] = {music: {url, title, thumbnail, timestamp, author, added, authorName, authorUrl} = []}
     }
-
-    if (!message.member) message.member = await message.guild.fetchMember(message);
-
-    const args = message.content.slice(prefix.length).trim().split(/ +/g);
-    const cmd = args.shift().toLowerCase();
     
-    if (cmd.length === 0) return;
-    
-    let command = client.commands.get(cmd);
-    if (!command) command = client.commands.get(client.aliases.get(cmd));
+    let command = client.commands.get(interaction.commandName);
 
     if (command) 
-        command.run(client, message, args);
+        command.run(client, interaction, interaction.options.getString('search'));
 
 });
 
-function friday(){
-    var date = new Date();
-    if(date.getUTCDay() == 6 && date.getUTCHours() == 1){
+async function checkDay()
+{
+    today = new Date().getDay()
 
-        latestTweets('YakuzaFriday', function (err, tweets) {
+    if(today != 4) return
 
-            const guildsChannels = client.guilds.cache.map(guild => guild.channels.cache.get(guild.systemChannelID || channelID))
+    const pythonProcess = spawn('python',["./commands/py/yt.py"]);
 
-            const pip = client.guilds.cache.get("226481489414586378").channels.cache.get("638605300475363350")
-        
-            guildsChannels[0] = pip;
-
-            guildsChannels.forEach(channel => {
-                channel.send(tweets[0].url)
+    pythonProcess.stdout.on('data', (data) => {
+        client.channels.fetch('466865681766416385').then(channel => {
+            channel.messages.fetch({limit: 100}).then(messages => {
+                var messageList = []
+                var videoId = data.toString().split('\n')[0]
+                var videoLink = `https://youtu.be/${videoId}`.substring(0, `https://youtu.be/${videoId}`.length-1)
+                messages.forEach(message => messageList.push(message.content) )
+                if(messageList.indexOf(videoLink) == -1) channel.send(`https://youtu.be/${data.toString()}`)
             })
-            
         })
-    } else {
-        setTimeout(friday, 3600000);
-        return;
-    }
+    });
+
+    
 }
+
 
 client.login(token);

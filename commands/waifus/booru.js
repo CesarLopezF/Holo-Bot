@@ -1,7 +1,7 @@
 const randbooru = require('megu-randbooru');
 const sb = new randbooru.BooruGrabber("sfw");
 const gb = new randbooru.BooruGrabber("nsfw");
-const { RichEmbed } = require("discord.js");
+const { MessageEmbed } = require("discord.js");
 
 module.exports = {
     name: "b",
@@ -9,10 +9,9 @@ module.exports = {
     description: "sends a random image from a selected waifu",
     usage: "b",
     run: async (client, message, args) => {
-        message.channel.send("Out of comission");
-        return;
         mensaje = message.content.toString().split( "-b ");
         search = mensaje[1];
+        console.log(`${message.author.username} is searching for ${search}`)
         if (search){
             search = search.toLowerCase();
             search = search.replace(/ /g,'_');
@@ -52,13 +51,13 @@ function booru(message, search){
                 var link = data.image_url.toString();
                 var tags = data.tags.toString();
                 var source = data.source.toString();
-                var embed = new RichEmbed()
+                var embed = new MessageEmbed()
                     .setColor('#DD7F3F')
                     .setDescription("I see <@" + message.author.id + "> is a degenerate of culture as well <:holoUwU:712812730410598400>")
                     .addField("Tags", tags)
                 if(source)
                 {
-                    embed = new RichEmbed(embed)
+                    embed = new MessageEmbed(embed)
                         .addField("Sauce", source)
                 }
                     
@@ -69,7 +68,7 @@ function booru(message, search){
                 } 
                 else 
                 {
-                    var embed = new RichEmbed(embed)
+                    var embed = new MessageEmbed(embed)
                         .setImage(link)
                     message.channel.send(embed);
                 }
@@ -83,19 +82,20 @@ function booru(message, search){
         sb.randomImage(search)
         .then(data => {
             var link = data.image_url.toString();
-            if(link.includes(".webm"))
+            if(link.includes(".webm") || link.includes(".mp4")) 
             {
                 message.channel.send("I see <@" + message.author.id + "> is a man of culture as well <:holoUwU:712812730410598400>\n"+link)
             } 
             else 
             {
-                var embed = new RichEmbed()
+                var embed = new MessageEmbed()
                     .setColor('#DD7F3F')
                     .setDescription("I see <@" + message.author.id + "> is a man of culture as well <:holoUwU:712812730410598400>")
                     .setImage(link)
                 message.channel.send(embed)
             }
         }).catch(err=>{
+            console.log(err)
         message.channel.send("Sorry <@" + message.author.id + ">, no image found... <:holoThink:712812745216622594> Try something else.");
         })
     }

@@ -1,21 +1,19 @@
 module.exports = {
-    name: "nhentai",
+    name: "nh",
     category: "info",
     description: "sends a random nhentai link",
-    usage: "nhentai",
-    aliases: ["nh"],
-    run: async (client, message, args) => {
-        if (message.channel.nsfw == true){
-            mensaje = message.content.toString().split( "-nh ");
-            search = mensaje[1];
+    run: async (client, interaction, args) => {
+        if (interaction.channel.nsfw == true){
+            search = args;
             if (search == null){
-                randSauce = Math.floor(Math.random() * 374496);
-                message.channel.send("https://www.nhentai.net/g/" + randSauce);
+                search = Math.floor(Math.random() * 447530);
+                interaction.reply("https://www.nhentai.net/g/" + search);
             } else {
-                message.channel.send("https://www.nhentai.net/g/" + search);
+                interaction.reply("https://www.nhentai.net/g/" + search);
             }
+            console.log(`${interaction.user.username} has generated the saucy number ${search}`)
         } else {
-            message.channel.send("Please go to a nsfw channel...");
+            interaction.reply("Please go to a nsfw channel...");
         }
     }
 }
